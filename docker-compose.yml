@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  kasir-api:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - ENVIRONMENT=production
+    restart: unless-stopped
+    networks:
+      - kasir-network
+
+networks:
+  kasir-network:
+    driver: bridge
