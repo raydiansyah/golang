@@ -102,6 +102,24 @@ func deleteProduk(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
+	http.HandleFunc("/api/kategori/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			GetKategoriByID(w, r)
+		} else if r.Method == "PUT" {
+			UpdateKategori(w, r)
+		} else if r.Method == "DELETE" {
+			DeleteKategori(w, r)
+		}
+	})
+
+	http.HandleFunc("/api/kategori", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			GetAllKategori(w, r)
+		} else if r.Method == "POST" {
+			CreateKategori(w, r)
+		}
+	})
+
 	// GET localhost:8080/api/produk/{id}
 	// PUT localhost:8080/api/produk/{id}
 	// DELETE localhost:8080/api/produk/{id}
@@ -152,7 +170,7 @@ func main() {
 	})
 	fmt.Println("Server running di localhost:8080")
 
-	err := http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe("localhost:8080", nil)
 	if err != nil {
 		fmt.Println("gagal running server")
 	}
