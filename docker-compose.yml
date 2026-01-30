@@ -1,6 +1,19 @@
 version: '3.8'
 
 services:
+postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: kasir_db
+    ports:
+      - "5432:5432"
+    networks:
+      - kasir-network
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   kasir-api:
     build: .
     ports:
@@ -14,3 +27,6 @@ services:
 networks:
   kasir-network:
     driver: bridge
+
+volumes:
+  postgres_data:

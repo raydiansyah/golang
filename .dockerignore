@@ -1,8 +1,8 @@
 .git
-.gitignore
-*.md
-.vscode
-.idea
-*.swp
-*.swo
-go.sum
+.env
+bin/
+vendor/
+.DS_Store
+*.exe
+*.test
+test_db.go
