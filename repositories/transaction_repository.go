@@ -72,9 +72,24 @@ func (repo *TransactionRepository) CreateTransaction(items []models.CheckoutItem
 
 	// insert transaction details
 
-	for i, detail := range details {
-		details[i].TransactionID = transactionID
-		_, err := tx.Exec("INSERT INTO transaction_details (transaction_id, product_id, quantity, subtotal) VALUES ($1, $2,$3,$4)", transactionID, detail.ProductID, detail.Quantity, detail.Subtotal)
+	// custom bulk insert to avoid N+1
+	if len(details) > 0 {
+		query := "INSERT INTO transaction_details (transaction_id, product_id, quantity, subtotal) VALUES "
+		vals := []interface{}{}
+		for i, detail := range details {
+			// Update the detail with transaction ID (struct logic)
+			details[i].TransactionID = transactionID
+
+			// construct placeholder ($1, $2, $3, $4), ($5, ...)
+			n := i * 4
+			query += fmt.Sprintf("($%d, $%d, $%d, $%d),", n+1, n+2, n+3, n+4)
+			vals = append(vals, transactionID, detail.ProductID, detail.Quantity, detail.Subtotal)
+		}
+		// remove trailing comma
+		query = query[:len(query)-1]
+
+		// execute bulk insert
+		_, err = tx.Exec(query, vals...)
 		if err != nil {
 			return nil, err
 		}
