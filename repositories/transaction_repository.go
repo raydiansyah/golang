@@ -6,15 +6,61 @@ import (
 	"kasir-api/models"
 )
 
-type TransactionRepository struct {
+type TransactionRepository interface {
+	GetReport(startDate, endDate string) (*models.ReportResponse, error)
+	CreateTransaction(items []models.CheckoutItem) (*models.Transaction, error)
+}
+
+type transactionRepository struct {
 	db *sql.DB
 }
 
-func NewTransactionRepository(db *sql.DB) *TransactionRepository {
-	return &TransactionRepository{db: db}
+func NewTransactionRepository(db *sql.DB) TransactionRepository {
+	return &transactionRepository{db: db}
 }
 
-func (repo *TransactionRepository) CreateTransaction(items []models.CheckoutItem) (*models.Transaction, error) {
+func (repo *transactionRepository) GetReport(startDate, endDate string) (*models.ReportResponse, error) {
+	var response models.ReportResponse
+
+	// 1. Total Revenue
+	queryRevenue := "SELECT COALESCE(SUM(total_amount), 0) FROM transactions WHERE created_at BETWEEN $1 AND $2"
+	err := repo.db.QueryRow(queryRevenue, startDate, endDate).Scan(&response.TotalRevenue)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. Total Transaction
+	queryCount := "SELECT COUNT(*) FROM transactions WHERE created_at BETWEEN $1 AND $2"
+	err = repo.db.QueryRow(queryCount, startDate, endDate).Scan(&response.TotalTransaction)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. Best Seller
+	queryBestSeller := `
+		SELECT p.name, SUM(td.quantity) as total_sold
+		FROM transaction_details td
+		JOIN transactions t ON td.transaction_id = t.id
+		JOIN products p ON td.product_id = p.id
+		WHERE t.created_at BETWEEN $1 AND $2
+		GROUP BY p.name
+		ORDER BY total_sold DESC
+		LIMIT 1
+	`
+	err = repo.db.QueryRow(queryBestSeller, startDate, endDate).Scan(&response.BestSeller.Name, &response.BestSeller.TotalSold)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// Handle case where no sales found
+			response.BestSeller = models.BestSeller{Name: "", TotalSold: 0}
+		} else {
+			return nil, err
+		}
+	}
+
+	return &response, nil
+}
+
+func (repo *transactionRepository) CreateTransaction(items []models.CheckoutItem) (*models.Transaction, error) {
 	var (
 		res *models.Transaction
 	)

@@ -66,6 +66,7 @@ func main() {
 
 	//Transaction
 	http.HandleFunc("/api/checkout", transactionHandler.HandleCheckout)
+	http.HandleFunc("/api/report/", transactionHandler.HandleGetAll)
 
 	// localhost:8080/health
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
